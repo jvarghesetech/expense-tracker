@@ -25,6 +25,7 @@ except ImportError:
 
 console = Console()
 DATA_FILE = Path.home() / ".expenses.csv"
+BUDGET_FILE = Path.home() / ".expenses_budget.json"
 CATEGORIES = ["food", "transport", "entertainment", "health", "shopping", "bills", "other"]
 
 
@@ -120,6 +121,66 @@ def summary(month=None):
     console.print(table)
 
 
+def load_budgets():
+    if not BUDGET_FILE.exists():
+        return {}
+    with open(BUDGET_FILE) as f:
+        return json.load(f)
+
+
+def save_budgets(budgets):
+    with open(BUDGET_FILE, "w") as f:
+        json.dump(budgets, f, indent=2)
+
+
+def budget_set(category, amount):
+    category = category.lower()
+    if category not in CATEGORIES:
+        console.print(f"[red]Unknown category: {category}[/red]")
+        return
+    try:
+        amount = float(amount)
+    except ValueError:
+        console.print("[red]Amount must be a number.[/red]")
+        return
+    budgets = load_budgets()
+    budgets[category] = amount
+    save_budgets(budgets)
+    console.print(f"[green]Budget set:[/green] {category} → ${amount:.2f}/month")
+
+
+def budget_status():
+    budgets = load_budgets()
+    if not budgets:
+        console.print("[yellow]No budgets set. Use: budget <category> <amount>[/yellow]")
+        return
+    month = datetime.now().strftime("%Y-%m")
+    rows = load()
+    spent = {}
+    for r in rows:
+        if r["date"].startswith(month):
+            cat = r["category"]
+            spent[cat] = spent.get(cat, 0) + float(r["amount"])
+
+    table = Table(title=f"Budget Status — {month}", box=box.ROUNDED, header_style="bold cyan")
+    table.add_column("Category", width=18)
+    table.add_column("Budget", justify="right", width=10)
+    table.add_column("Spent", justify="right", width=10)
+    table.add_column("Remaining", justify="right", width=12)
+    table.add_column("Bar", width=28)
+
+    for cat, limit in sorted(budgets.items()):
+        s = spent.get(cat, 0)
+        remaining = limit - s
+        pct = min((s / limit) * 100, 100) if limit else 0
+        color = CATEGORY_COLORS.get(cat, "dim")
+        warn = "red" if pct >= 90 else "yellow" if pct >= 70 else color
+        bar = f"[{warn}]{'█' * int(pct / 4)}[/{warn}][dim]{'░' * (25 - int(pct / 4))}[/dim]"
+        rem_str = f"[green]${remaining:.2f}[/green]" if remaining >= 0 else f"[red]-${abs(remaining):.2f}[/red]"
+        table.add_row(f"[{color}]{cat}[/{color}]", f"${limit:.2f}", f"${s:.2f}", rem_str, bar)
+    console.print(table)
+
+
 def export(output_path, fmt="csv", month=None):
     rows = load()
     if month:
@@ -212,6 +273,13 @@ def main():
     elif args[0] == "summary":
         month = args[1] if len(args) > 1 else None
         summary(month)
+    elif args[0] == "budget":
+        if len(args) == 1:
+            budget_status()
+        elif len(args) == 3:
+            budget_set(args[1], args[2])
+        else:
+            console.print("[red]Usage: budget <category> <amount>  OR  budget[/red]")
     elif args[0] == "export":
         if len(args) < 2:
             console.print("[red]Usage: export <output.csv|output.json> [YYYY-MM][/red]")
