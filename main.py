@@ -119,6 +119,30 @@ def summary(month=None):
     console.print(table)
 
 
+def edit(expense_id, description=None, amount=None, category=None):
+    rows = load()
+    for r in rows:
+        if r["id"] == str(expense_id):
+            if description:
+                r["description"] = description
+            if amount:
+                try:
+                    r["amount"] = f"{float(amount):.2f}"
+                except ValueError:
+                    console.print("[red]Amount must be a number.[/red]")
+                    return
+            if category:
+                category = category.lower()
+                if category not in CATEGORIES:
+                    console.print(f"[yellow]Unknown category '{category}', using 'other'[/yellow]")
+                    category = "other"
+                r["category"] = category
+            save(rows)
+            console.print(f"[green]Updated expense #{expense_id}[/green]")
+            return
+    console.print(f"[red]No expense with ID {expense_id}[/red]")
+
+
 def delete(expense_id):
     rows = load()
     new_rows = [r for r in rows if r["id"] != str(expense_id)]
@@ -168,6 +192,23 @@ def main():
     elif args[0] == "summary":
         month = args[1] if len(args) > 1 else None
         summary(month)
+    elif args[0] == "edit":
+        if len(args) < 3:
+            console.print("[red]Usage: edit <id> --desc <text> --amount <num> --cat <category>[/red]")
+        else:
+            expense_id = args[1]
+            desc = amount = cat = None
+            i = 2
+            while i < len(args):
+                if args[i] == "--desc" and i + 1 < len(args):
+                    desc = args[i + 1]; i += 2
+                elif args[i] == "--amount" and i + 1 < len(args):
+                    amount = args[i + 1]; i += 2
+                elif args[i] == "--cat" and i + 1 < len(args):
+                    cat = args[i + 1]; i += 2
+                else:
+                    i += 1
+            edit(expense_id, desc, amount, cat)
     elif args[0] == "delete":
         if len(args) < 2:
             console.print("[red]Usage: delete <id>[/red]")
