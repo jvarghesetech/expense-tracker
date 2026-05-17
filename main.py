@@ -66,10 +66,14 @@ def add(description, amount, category="other"):
     console.print(f"[green]Added:[/green] {description} — ${amount:.2f} [{category}]")
 
 
-def list_expenses(month=None):
+def list_expenses(month=None, from_date=None, to_date=None):
     rows = load()
     if month:
         rows = [r for r in rows if r["date"].startswith(month)]
+    if from_date:
+        rows = [r for r in rows if r["date"] >= from_date]
+    if to_date:
+        rows = [r for r in rows if r["date"] <= to_date]
     if not rows:
         console.print("[yellow]No expenses found.[/yellow]")
         return
@@ -89,10 +93,14 @@ def list_expenses(month=None):
     console.print(table)
 
 
-def summary(month=None):
+def summary(month=None, from_date=None, to_date=None):
     rows = load()
     if month:
         rows = [r for r in rows if r["date"].startswith(month)]
+    if from_date:
+        rows = [r for r in rows if r["date"] >= from_date]
+    if to_date:
+        rows = [r for r in rows if r["date"] <= to_date]
     if not rows:
         console.print("[yellow]No expenses found.[/yellow]")
         return
@@ -268,11 +276,27 @@ def main():
             cat = args[3] if len(args) > 3 else "other"
             add(args[1], args[2], cat)
     elif args[0] == "list":
-        month = args[1] if len(args) > 1 else None
-        list_expenses(month)
+        month = from_d = to_d = None
+        i = 1
+        while i < len(args):
+            if args[i] == "--from" and i + 1 < len(args):
+                from_d = args[i + 1]; i += 2
+            elif args[i] == "--to" and i + 1 < len(args):
+                to_d = args[i + 1]; i += 2
+            else:
+                month = args[i]; i += 1
+        list_expenses(month, from_d, to_d)
     elif args[0] == "summary":
-        month = args[1] if len(args) > 1 else None
-        summary(month)
+        month = from_d = to_d = None
+        i = 1
+        while i < len(args):
+            if args[i] == "--from" and i + 1 < len(args):
+                from_d = args[i + 1]; i += 2
+            elif args[i] == "--to" and i + 1 < len(args):
+                to_d = args[i + 1]; i += 2
+            else:
+                month = args[i]; i += 1
+        summary(month, from_d, to_d)
     elif args[0] == "budget":
         if len(args) == 1:
             budget_status()
