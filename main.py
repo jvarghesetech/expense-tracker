@@ -109,6 +109,10 @@ def delete(expense_id):
     if len(new_rows) == len(rows):
         console.print(f"[red]No expense with ID {expense_id}[/red]")
         return
+    console.print(f"[yellow]Delete expense #{expense_id}? (y/n)[/yellow]", end=" ")
+    if input().strip().lower() != "y":
+        console.print("[dim]Cancelled.[/dim]")
+        return
     save(new_rows)
     console.print(f"[green]Deleted expense #{expense_id}[/green]")
 
