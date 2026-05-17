@@ -1,4 +1,5 @@
 import csv
+import json
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -119,6 +120,25 @@ def summary(month=None):
     console.print(table)
 
 
+def export(output_path, fmt="csv", month=None):
+    rows = load()
+    if month:
+        rows = [r for r in rows if r["date"].startswith(month)]
+    if not rows:
+        console.print("[yellow]No expenses to export.[/yellow]")
+        return
+    out = Path(output_path)
+    if fmt == "json":
+        with open(out, "w") as f:
+            json.dump(rows, f, indent=2)
+    else:
+        with open(out, "w", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=["id", "date", "description", "amount", "category"])
+            writer.writeheader()
+            writer.writerows(rows)
+    console.print(f"[green]Exported {len(rows)} expense(s) to[/green] {out}")
+
+
 def edit(expense_id, description=None, amount=None, category=None):
     rows = load()
     for r in rows:
@@ -192,6 +212,14 @@ def main():
     elif args[0] == "summary":
         month = args[1] if len(args) > 1 else None
         summary(month)
+    elif args[0] == "export":
+        if len(args) < 2:
+            console.print("[red]Usage: export <output.csv|output.json> [YYYY-MM][/red]")
+        else:
+            out = args[1]
+            month = args[2] if len(args) > 2 else None
+            fmt = "json" if out.endswith(".json") else "csv"
+            export(out, fmt, month)
     elif args[0] == "edit":
         if len(args) < 3:
             console.print("[red]Usage: edit <id> --desc <text> --amount <num> --cat <category>[/red]")
