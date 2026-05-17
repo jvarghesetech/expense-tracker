@@ -16,6 +16,7 @@ CATEGORY_COLORS = {
 try:
     from rich.console import Console
     from rich.table import Table
+    from rich.progress import BarColumn, Progress
     from rich import box
 except ImportError:
     print("Run: pip install rich")
@@ -105,13 +106,16 @@ def summary(month=None):
     )
     table.add_column("Category", width=20)
     table.add_column("Amount", justify="right", width=12)
-    table.add_column("Share", justify="right", width=10)
-    for cat, amt in sorted(by_cat.items(), key=lambda x: -x[1]):
+    table.add_column("Share", justify="right", width=8)
+    table.add_column("Bar", width=30)
+    sorted_cats = sorted(by_cat.items(), key=lambda x: -x[1])
+    for cat, amt in sorted_cats:
         pct = (amt / total) * 100
         color = CATEGORY_COLORS.get(cat, "dim")
-        table.add_row(f"[{color}]{cat}[/{color}]", f"${amt:.2f}", f"{pct:.1f}%")
+        bar = f"[{color}]{'█' * int(pct / 4)}[/{color}]"
+        table.add_row(f"[{color}]{cat}[/{color}]", f"${amt:.2f}", f"{pct:.1f}%", bar)
     table.add_section()
-    table.add_row("[bold]Total[/bold]", f"[bold]${total:.2f}[/bold]", "100%")
+    table.add_row("[bold]Total[/bold]", f"[bold]${total:.2f}[/bold]", "100%", "")
     console.print(table)
 
 
