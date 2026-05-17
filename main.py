@@ -3,6 +3,16 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+CATEGORY_COLORS = {
+    "food": "green",
+    "transport": "blue",
+    "entertainment": "magenta",
+    "health": "red",
+    "shopping": "yellow",
+    "bills": "bright_red",
+    "other": "dim",
+}
+
 try:
     from rich.console import Console
     from rich.table import Table
@@ -68,7 +78,8 @@ def list_expenses(month=None):
     table.add_column("Category", width=15)
     total = 0.0
     for r in rows:
-        table.add_row(r["id"], r["date"], r["description"], f"${r['amount']}", r["category"])
+        color = CATEGORY_COLORS.get(r["category"], "dim")
+        table.add_row(r["id"], r["date"], r["description"], f"${r['amount']}", f"[{color}]{r['category']}[/{color}]")
         total += float(r["amount"])
     table.add_section()
     table.add_row("", "", "[bold]Total[/bold]", f"[bold]${total:.2f}[/bold]", "")
@@ -97,7 +108,8 @@ def summary(month=None):
     table.add_column("Share", justify="right", width=10)
     for cat, amt in sorted(by_cat.items(), key=lambda x: -x[1]):
         pct = (amt / total) * 100
-        table.add_row(cat, f"${amt:.2f}", f"{pct:.1f}%")
+        color = CATEGORY_COLORS.get(cat, "dim")
+        table.add_row(f"[{color}]{cat}[/{color}]", f"${amt:.2f}", f"{pct:.1f}%")
     table.add_section()
     table.add_row("[bold]Total[/bold]", f"[bold]${total:.2f}[/bold]", "100%")
     console.print(table)
